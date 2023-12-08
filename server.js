@@ -1,9 +1,7 @@
-const { json } = require("body-parser");
 const express = require("express");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
 const path = require("path");
-const { emit } = require("process");
 
 const app = express();
 const port = 3000;
@@ -16,17 +14,26 @@ app.get("/", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
+  const { name, email, password, repeatPass } = req.body;
+  if (!name || !email || !password || !repeatPass || password !== repeatPass) {
+    return res.status(400).json({ error: "Invalid input" });
+  }
+
+  const saltRounds = 10;
+  const salt = bcrypt.genSaltSync(saltRounds);
+
+  const hashedPassword = bcrypt.hashSync(password, salt);
+
   const credentials = {
     id: Math.floor(Math.random() * 1000000),
-    name: req.body.name,
-    email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 10),
-    repeatPass: req.body.repeatPass,
+    name,
+    email,
+    password: hashedPassword,
   };
-  console.log(`Hashed Password: ${credentials.password}`);
+
   fs.readFile("data.json", "utf-8", (err, data) => {
     if (err) {
-      console.log("Failed in reading data");
+      console.error("Failed to read data:", err);
       return res.status(500).send("Internal Server Error");
     }
 
@@ -44,7 +51,7 @@ app.post("/register", (req, res) => {
     credentialsdata.push(credentials);
     fs.writeFile("data.json", JSON.stringify(credentialsdata), (err) => {
       if (err) {
-        console.log("Unable to write data");
+        console.error("Unable to write data:", err);
         return res.status(500).send("Internal Server Error");
       }
       res.status(201).json(credentials);
@@ -53,22 +60,27 @@ app.post("/register", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const { email, password } = req.body;
+
   fs.readFile("data.json", "utf-8", (err, data) => {
-    if (err) throw err("Unable to read data");
+    if (err) {
+      console.error("Failed to read data:", err);
+      return res.status(500).send("Internal Server Error");
+    }
+
     const userData = JSON.parse(data);
     const user = userData.find((user) => user.email === email);
+
     if (user && bcrypt.compareSync(password, user.password)) {
-      res.status(200).send("Logged in");
-      console.log("logged in");
+      res.status(200).json({ message: "Logged in" });
+      console.log("Logged in:", user.email);
     } else {
-      res.status(400).send("Invalid password");
-      console.log("Invalid Password");
+      res.status(401).json({ error: "Invalid credentials" });
+      console.log("Invalid credentials for:", email);
     }
   });
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Server listening on port ${port}`);
 });
