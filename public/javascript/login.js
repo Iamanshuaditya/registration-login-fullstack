@@ -26,8 +26,11 @@ function handleRegister() {
   }
 
   function parsedResponse(data) {
-    signupData.push(data);
-    console.log(signupData);
+    if (data.error) {
+      alert(data.error);
+    } else {
+      alert("Registration successful");
+    }
   }
 
   fetch("http://localhost:3000/register", {
@@ -40,8 +43,11 @@ function handleRegister() {
 }
 
 function handleLogin() {
-  const email = document.getElementById("form2Example17").value;
-  const password = document.getElementById("form2Example27").value;
+  const emailInput = document.getElementById("form2Example17");
+  const passwordInput = document.getElementById("form2Example27");
+
+  const email = emailInput.value;
+  const password = passwordInput.value;
 
   fetch("http://localhost:3000/login", {
     method: "POST",
@@ -56,6 +62,11 @@ function handleLogin() {
       }
       return response.json();
     })
-    .then((data) => console.log(data))
+    .then((data) => {
+      emailInput.value = "";
+      passwordInput.value = "";
+
+      alert("Logged in");
+    })
     .catch((error) => console.error("Error:", error.message, error.response));
 }

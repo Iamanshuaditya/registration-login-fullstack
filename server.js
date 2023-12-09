@@ -36,7 +36,6 @@ app.post("/register", (req, res) => {
       console.error("Failed to read data:", err);
       return res.status(500).send("Internal Server Error");
     }
-
     let credentialsdata;
     try {
       credentialsdata = JSON.parse(data);
@@ -46,6 +45,14 @@ app.post("/register", (req, res) => {
 
     if (!Array.isArray(credentialsdata)) {
       credentialsdata = [];
+    }
+    const existingEmail = credentialsdata.find(
+      (person) => person.email === email
+    );
+    if (existingEmail) {
+      return res.status(400).json({
+        error: "Email already exists",
+      });
     }
 
     credentialsdata.push(credentials);
